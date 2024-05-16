@@ -1,7 +1,6 @@
 import { NextApiRequest, NextApiResponse } from 'next';
 import * as crypto from 'crypto';
 
-// Simulated RSA key pair generation
 function generateRSAKeyPair(): { publicKey: string, privateKey: string } {
     const { publicKey, privateKey } = crypto.generateKeyPairSync('rsa', {
         modulusLength: 2048,
@@ -21,7 +20,6 @@ function generateSymmetricKey(): Buffer {
     return crypto.randomBytes(32);
 }
 
-// Simulated encryption and decryption functions
 function encryptWithRSA(publicKey: string, data: Buffer): Buffer {
     return crypto.publicEncrypt(publicKey, data);
 }
@@ -30,40 +28,38 @@ function decryptWithRSA(privateKey: string, encryptedData: Buffer): Buffer {
     return crypto.privateDecrypt(privateKey, encryptedData);
 }
 
-// Simulated login credential generation
 function generateLoginCredentials(username: string, password: string): string {
-    return `${username}:${password}`; // Simple concatenation for demonstration
+    return `${username}:${password}`;
 }
 
-// Simulated encryption and decryption of login credentials using symmetric key
 function encryptWithSymmetricKey(key: Buffer, data: string): Buffer {
-    const cipher = crypto.createCipheriv('aes-256-cbc', key, crypto.randomBytes(16)); // AES-256-CBC encryption
-    return Buffer.concat([cipher.update(data, 'utf8'), cipher.final()]);
+    const iv = crypto.randomBytes(16);
+    const cipher = crypto.createCipheriv('aes-256-cbc', key, iv);
+    const encrypted = Buffer.concat([cipher.update(data, 'utf8'), cipher.final()]);
+    return Buffer.concat([iv, encrypted]);
 }
 
 function decryptWithSymmetricKey(key: Buffer, encryptedData: Buffer): string {
-    const decipher = crypto.createDecipheriv('aes-256-cbc', key, encryptedData.slice(0, 16)); // Extract IV from the encrypted data
-    return Buffer.concat([decipher.update(encryptedData.slice(16)), decipher.final()]).toString();
+    const iv = encryptedData.slice(0, 16);
+    const encrypted = encryptedData.slice(16);
+    const decipher = crypto.createDecipheriv('aes-256-cbc', key, iv);
+    const decrypted = Buffer.concat([decipher.update(encrypted), decipher.final()]);
+    return decrypted.toString('utf8');
 }
 
-// Simulate client-server communication
 function simulateLogin(username: string, password: string) {
-    // Client-side
     const { publicKey, privateKey } = generateRSAKeyPair();
     const symmetricKey = generateSymmetricKey();
     const encryptedSymmetricKey = encryptWithRSA(publicKey, symmetricKey);
     console.log("Encrypted Symmetric Key:", encryptedSymmetricKey.toString('base64'));
 
-    // Server-side
     const decryptedSymmetricKey = decryptWithRSA(privateKey, encryptedSymmetricKey);
     const loginCredentials = generateLoginCredentials(username, password);
     const encryptedLoginCredentials = encryptWithSymmetricKey(decryptedSymmetricKey, loginCredentials);
     console.log("Encrypted Login Credentials:", encryptedLoginCredentials.toString('base64'));
 
-    // Server-side (continued)
     const decryptedLoginCredentials = decryptWithSymmetricKey(decryptedSymmetricKey, encryptedLoginCredentials);
     console.log("Decrypted Login Credentials:", decryptedLoginCredentials);
-    // Verify credentials, etc.
 }
 
 export default function handler(req: NextApiRequest, res: NextApiResponse) {
