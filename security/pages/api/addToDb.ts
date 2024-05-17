@@ -1,5 +1,10 @@
 import { NextApiRequest, NextApiResponse } from 'next';
 import sqlite3 from 'sqlite3';
+import { createHash } from 'crypto';
+
+function hash(string) {
+    return createHash('sha256').update(string).digest('hex');
+  }
 
 // Connect to a SQLite database file named 'test.db'
 let db = new sqlite3.Database('accounts.db', (err) => {
@@ -25,7 +30,7 @@ function insertAccount(username: string, password: string, callback: Callback): 
     });
 
     // Insert the account record
-    db.run(`INSERT INTO account (username, password) VALUES (?, ?)`, [username, password], function (this: sqlite3.RunResult, err: Error | null) {
+    db.run(`INSERT INTO account (username, password) VALUES (?, ?)`, [username, hash(password)], function (this: sqlite3.RunResult, err: Error | null) {
         if (err) {
             callback(err);
         } else {

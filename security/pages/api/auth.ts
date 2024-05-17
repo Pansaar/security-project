@@ -1,6 +1,12 @@
 import { NextApiRequest, NextApiResponse } from 'next';
 import * as crypto from 'crypto';
 import sqlite3 from 'sqlite3';
+import { createHash } from 'crypto';
+
+function hash(string) {
+    return createHash('sha256').update(string).digest('hex');
+  }
+
 type Callback = (err: Error | null, password?: string) => void;
 
 function generateRSAKeyPair(): { publicKey: string, privateKey: string, n: bigint, e: bigint, d: bigint } {
@@ -130,7 +136,7 @@ function simulateLogin(username: string, password: string) {
         if (err) {
             console.error('Error:', err.message);
         } else {
-            if(password == result[1]){
+            if(password == hash(result[1])){
                 console.log("Correct Password for " + result[0])
             }
             else {
