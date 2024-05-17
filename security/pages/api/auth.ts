@@ -121,29 +121,12 @@ function simulateLogin(username: string, password: string) {
     const encryptedSymmetricKey = encryptWithRSA(publicKey, symmetricKey, n, e);
     console.log("Encrypted Symmetric Key:", encryptedSymmetricKey.toString('base64'));
     const decryptedSymmetricKey = decryptWithRSA(privateKey, encryptedSymmetricKey, n, d);
-
-
     const loginCredentials = generateLoginCredentials(username, password);
     const encryptedLoginCredentials = encryptWithSymmetricKey(symmetricKey, loginCredentials); 
     console.log("Encrypted Login Credentials:", encryptedLoginCredentials.toString('base64'));
     const decryptedLoginCredentials = decryptWithSymmetricKey(symmetricKey, encryptedLoginCredentials);
     console.log("Decrypted Login Credentials:", decryptedLoginCredentials);
     const result = separateString(decryptedLoginCredentials);
-
-    //Password Test, whether if it's right or not.
-    //In this case, the password test is not a dedicated function, but it's nested inside this getPassword() function;
-    getPassword(username, (err, password) => {
-        if (err) {
-            console.error('Error:', err.message);
-        } else {
-            if(password == hash(result[1])){
-                console.log("Correct Password for " + result[0])
-            }
-            else {
-                console.log("Wrong Password for " + result[0])
-            }
-        }
-    });
 }
 
 function getPassword(username: string, callback: Callback): void {
@@ -179,8 +162,25 @@ function getPassword(username: string, callback: Callback): void {
 export default function handler(req: NextApiRequest, res: NextApiResponse) {
     if (req.method === 'POST') {
         const { username, password } = req.body;
-        simulateLogin(username, password);
-        res.status(200).json({ message: 'Login request received' });
+        
+        // Check password against the database
+        getPassword(username, (err, dbPassword) => {
+            if (err) {
+                console.error('Error:', err.message);
+                res.status(500).json({ error: 'Internal Server Error' });
+                return;
+            } else {
+                const hashedPassword = hash(password);
+                if (dbPassword === hashedPassword) {
+                    // Password is correct
+                    simulateLogin(username, password);
+                    res.status(200).json({ message: 'Login successful' });
+                } else {
+                    // Password is incorrect
+                    res.status(401).json({ error: 'Unauthorized', message: 'Incorrect username or password' });
+                }
+            }
+        });
     } else {
         res.setHeader('Allow', ['POST']);
         res.status(405).end(`Method ${req.method} Not Allowed`);

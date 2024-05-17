@@ -1,23 +1,26 @@
 "use client"
 import React, { useState } from 'react';
+import { useRouter } from 'next/router';
 
 const Auth = () => {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
+  const router = useRouter();
 
-  const handleSubmit = async (event: { preventDefault: () => void; }) => {
+  const handleSubmit = async (event) => {
     event.preventDefault();
   
     try {
       const response = await fetch('/api/auth', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ username, password }),
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ username, password }),
       });
   
       if (response.ok) {
-        // Login successful
-        console.log('Login successful');
+        // Login successful, redirect to /homePage
+        router.push('/homePage');
+        console.log('Login success');
       } else {
         // Login failed
         console.log('Login failed');
