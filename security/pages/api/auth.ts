@@ -1,48 +1,9 @@
 import { NextApiRequest, NextApiResponse } from 'next';
-import * as crypto from 'crypto'
-
-function isPrime(n: bigint): boolean {
-    if (n <= 1n) {
-        return false;
-    }
-    if (n <= 3n) {
-        return true;
-    }
-    if (n % 2n === 0n || n % 3n === 0n) {
-        return false;
-    }
-    let i = 5n;
-    while (i * i <= n) {
-        if (n % i === 0n || n % (i + 2n) === 0n) {
-            return false;
-        }
-        i += 6n;
-    }
-    return true;
-}
-
-function generatePrime(bits: number): bigint {
-    let candidate = randomOddBigInt(bits);
-    while (!isPrime(candidate)) {
-        candidate += 2n; // Increment by 2 to get the next odd number
-    }
-    return candidate;
-}
-
-function randomOddBigInt(bits: number): bigint {
-    let result = 0n;
-    for (let i = 0; i < bits; i++) {
-        result <<= 1n;
-        result |= BigInt(Math.random() < 0.5 ? 0 : 1);
-    }
-    // Ensure the number is odd by setting the LSB to 1
-    result |= 1n;
-    return result;
-}
+import * as crypto from 'crypto';
 
 function generateRSAKeyPair(): { publicKey: string, privateKey: string, n: bigint, e: bigint, d: bigint } {
-    const p = generatePrime(1024);
-    const q = generatePrime(1024);
+    const p = generatePrime();
+    const q = generatePrime();
     const n = p * q;
     const phi = (p - 1n) * (q - 1n);
     const e = generateE(phi);
@@ -53,6 +14,10 @@ function generateRSAKeyPair(): { publicKey: string, privateKey: string, n: bigin
     console.log('public key:', publicKey)
     console.log('public key:', privateKey)
     return { publicKey, privateKey, n, e, d };
+}
+
+function generatePrime(): bigint {
+    return 7919n;
 }
 
 function generateE(phi: bigint): bigint {
@@ -125,6 +90,8 @@ function encryptWithSymmetricKey(key: Buffer, data: string): Buffer {
     return Buffer.concat([iv, encrypted]);
 }
 
+
+
 function decryptWithSymmetricKey(key: Buffer, encryptedData: Buffer): string {
     const iv = encryptedData.slice(0, 16);
     const encrypted = encryptedData.slice(16);
@@ -140,13 +107,16 @@ function simulateLogin(username: string, password: string) {
     const encryptedSymmetricKey = encryptWithRSA(publicKey, symmetricKey, n, e);
     console.log("Encrypted Symmetric Key:", encryptedSymmetricKey.toString('base64'));
     const decryptedSymmetricKey = decryptWithRSA(privateKey, encryptedSymmetricKey, n, d);
+    
 
     const loginCredentials = generateLoginCredentials(username, password);
-    const encryptedLoginCredentials = encryptWithSymmetricKey(symmetricKey, loginCredentials);
+    const encryptedLoginCredentials = encryptWithSymmetricKey(symmetricKey, loginCredentials); 
     console.log("Encrypted Login Credentials:", encryptedLoginCredentials.toString('base64'));
     const decryptedLoginCredentials = decryptWithSymmetricKey(symmetricKey, encryptedLoginCredentials);
     console.log("Decrypted Login Credentials:", decryptedLoginCredentials);
 }
+
+
 
 export default function handler(req: NextApiRequest, res: NextApiResponse) {
     if (req.method === 'POST') {
