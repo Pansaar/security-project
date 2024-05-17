@@ -9,7 +9,7 @@ const Auth = () => {
     event.preventDefault();
   
     try {
-      const response = await fetch('/api/auth', {
+      const response = await fetch('/api/addToDb', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ username, password }),
@@ -17,10 +17,10 @@ const Auth = () => {
   
       if (response.ok) {
         // Login successful
-        console.log('Login successful');
+        console.log('Inserting credentials successful');
       } else {
         // Login failed
-        console.log('Login failed');
+        console.log('Inserting credentials failed');
       }
     } catch (error) {
       console.error('Error during login:', error);
@@ -29,7 +29,7 @@ const Auth = () => {
   
   return (
     <div>
-      <h1>Login</h1>
+      <h1>Sign up</h1>
       <form onSubmit={handleSubmit}>
         <div>
         <label htmlFor="username">Username:</label>
@@ -53,9 +53,9 @@ const Auth = () => {
           required
         />
         </div>
-        <button type="submit">Login</button>
+        <button type="submit">Sign up</button>
       </form>
-      <p>Don't have an account? <a href="/signup">SIGN UP</a> here!</p>
+      <p>Already have an account? <a href="/">LOGIN</a> here!</p>
     </div>
   );
 };

@@ -1,5 +1,7 @@
 import { NextApiRequest, NextApiResponse } from 'next';
 import * as crypto from 'crypto';
+import sqlite3 from 'sqlite3';
+type Callback = (err: Error | null, password?: string) => void;
 
 function generateRSAKeyPair(): { publicKey: string, privateKey: string, n: bigint, e: bigint, d: bigint } {
     const p = generatePrime();
@@ -14,6 +16,14 @@ function generateRSAKeyPair(): { publicKey: string, privateKey: string, n: bigin
     console.log('public key:', publicKey)
     console.log('public key:', privateKey)
     return { publicKey, privateKey, n, e, d };
+}
+
+function separateString(input) {
+    // Split the input string by colon
+    const components = input.split(':');
+
+    // Return the array of components
+    return components;
 }
 
 function generatePrime(): bigint {
@@ -90,8 +100,6 @@ function encryptWithSymmetricKey(key: Buffer, data: string): Buffer {
     return Buffer.concat([iv, encrypted]);
 }
 
-
-
 function decryptWithSymmetricKey(key: Buffer, encryptedData: Buffer): string {
     const iv = encryptedData.slice(0, 16);
     const encrypted = encryptedData.slice(16);
@@ -107,16 +115,60 @@ function simulateLogin(username: string, password: string) {
     const encryptedSymmetricKey = encryptWithRSA(publicKey, symmetricKey, n, e);
     console.log("Encrypted Symmetric Key:", encryptedSymmetricKey.toString('base64'));
     const decryptedSymmetricKey = decryptWithRSA(privateKey, encryptedSymmetricKey, n, d);
-    
+
 
     const loginCredentials = generateLoginCredentials(username, password);
     const encryptedLoginCredentials = encryptWithSymmetricKey(symmetricKey, loginCredentials); 
     console.log("Encrypted Login Credentials:", encryptedLoginCredentials.toString('base64'));
     const decryptedLoginCredentials = decryptWithSymmetricKey(symmetricKey, encryptedLoginCredentials);
     console.log("Decrypted Login Credentials:", decryptedLoginCredentials);
+    const result = separateString(decryptedLoginCredentials);
+
+    //Password Test, whether if it's right or not.
+    //In this case, the password test is not a dedicated function, but it's nested inside this getPassword() function;
+    getPassword(username, (err, password) => {
+        if (err) {
+            console.error('Error:', err.message);
+        } else {
+            if(password == result[1]){
+                console.log("Correct Password for " + result[0])
+            }
+            else {
+                console.log("Wrong Password for " + result[0])
+            }
+        }
+    });
 }
 
+function getPassword(username: string, callback: Callback): void {
+    // Open the database
+    const db = new sqlite3.Database('./accounts.db', (err: Error | null) => {
+        if (err) {
+            callback(err);
+            return;
+        }
+    });
 
+    // Query the password for the given username
+    db.all(`SELECT password FROM account WHERE username = ?`, [username], (err: Error | null, rows: { password: string }[]) => {
+        if (err) {
+            callback(err);
+        } else if (rows.length === 0) {
+            callback(new Error('No user found with the given username.'));
+        } else {
+            const password = rows[0].password;
+            callback(null, password);
+        }
+    });
+
+    // Close the database
+    db.close((err: Error | null) => {
+        if (err) {
+            console.error('Error closing database:', err.message);
+        } else {
+        }
+    });
+}
 
 export default function handler(req: NextApiRequest, res: NextApiResponse) {
     if (req.method === 'POST') {
