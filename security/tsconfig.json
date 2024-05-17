@@ -1,8 +1,8 @@
 {
     "compilerOptions": {
-      "target": "es2017",
+      "target": "es2020",
       "lib": [
-        "ES2015",
+        "ES2020",
         "dom"
       ],
       "allowJs": true,
